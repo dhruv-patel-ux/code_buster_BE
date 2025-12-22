@@ -22,7 +22,7 @@ const limiter = rateLimit({
 app.use('/api/', limiter);
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-app.use(express.send({ limit: '10mb' }));
+app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 app.use(compression());
