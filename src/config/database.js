@@ -32,7 +32,7 @@ async function initialize() {
 
   await sequelize.sync();
 
-  console.log('✅ Database & models initialized successfully');
+  console.log('Database & models initialized successfully');
 }
 initialize();
 module.exports = db;
