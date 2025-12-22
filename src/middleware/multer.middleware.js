@@ -5,7 +5,6 @@ require('dotenv').config();
 const MAX_FILE_SIZE = process.env.MAX_FILE_SIZE || 10 * 1024 * 1024; // 10MB
 const UPLOAD_DIR = process.env.UPLOAD_DIR || './uploads';
 
-// Configure storage for product images
 const productStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, path.join(UPLOAD_DIR, 'products'));
@@ -17,7 +16,6 @@ const productStorage = multer.diskStorage({
   }
 });
 
-// Configure storage for bulk upload files
 const bulkStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, path.join(UPLOAD_DIR, 'bulk'));
@@ -29,7 +27,6 @@ const bulkStorage = multer.diskStorage({
   }
 });
 
-// File filter for images only
 const imageFilter = (req, file, cb) => {
   if (file.mimetype.startsWith('image/')) {
     cb(null, true);
@@ -38,7 +35,6 @@ const imageFilter = (req, file, cb) => {
   }
 };
 
-// File filter for CSV/XLSX only
 const bulkFileFilter = (req, file, cb) => {
   const ext = path.extname(file.originalname).toLowerCase();
   if (ext === '.csv' || ext === '.xlsx' || ext === '.xls') {
@@ -48,7 +44,6 @@ const bulkFileFilter = (req, file, cb) => {
   }
 };
 
-// Multer instances
 const uploadProductImage = multer({
   storage: productStorage,
   limits: { fileSize: MAX_FILE_SIZE },

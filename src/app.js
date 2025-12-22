@@ -6,7 +6,6 @@ const rateLimit = require('express-rate-limit');
 require('dotenv').config();
 const path = require('path')
 
-// Import routes
 const router = require('./routes/index');
 const { errorHandler } = require('./middleware/errorHandler');
 
