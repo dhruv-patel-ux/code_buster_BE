@@ -2,7 +2,7 @@ const xlsx = require('xlsx');
 const { asyncHandler } = require('../middleware/errorHandler');
 const fs = require('fs').promises;
 const path = require('path');
-const {Op} = require('sequelize')
+const { Op } = require('sequelize')
 const db = require('../config/database');
 
 // const bulkUpload = asyncHandler(async (req, res) => {
@@ -24,7 +24,7 @@ const db = require('../config/database');
 //             // console.log(req.file);
 //             const fileContent = await fs.readFile(req.file.path, 'utf8');
 //             data = csv.parse(fileContent, { columns: true });
-            
+
 //             // data = csv.parse(req.file.buffer.toString(), { columns: true });
 //         } else {
 //             return res.status(400).send({ error: 'Only CSV and XLSX files allowed' });
@@ -46,7 +46,7 @@ const db = require('../config/database');
 //                 try {
 //                     const { name, price, product_image, category_name } = row;
 //                     console.log(name, price);
-                    
+
 //                     if (!name || !price) {
 //                         errorCount++;
 //                         errors.push(`Row ${i + batch.indexOf(row) + 1}: Missing name or price`);
@@ -106,20 +106,20 @@ const bulkUpload = asyncHandler(async (req, res) => {
 
   const { category_id } = req.body;
   const BATCH_SIZE = 500;
-  
+
   try {
     let successCount = 0;
     let errorCount = 0;
     const errors = [];
     const categoryCache = new Map();
-    
+
     const processStream = async (stream) => {
       let batch = [];
       let rowNumber = 0;
 
       for await (const row of stream) {
         rowNumber++;
-        
+
         try {
           const { name, price, product_image, category_name } = row;
 
@@ -130,7 +130,7 @@ const bulkUpload = asyncHandler(async (req, res) => {
           }
 
           let catId = category_id;
-          
+
           if (category_name && !catId) {
             // Check cache first
             if (categoryCache.has(category_name)) {
@@ -141,7 +141,7 @@ const bulkUpload = asyncHandler(async (req, res) => {
                 where: { name: category_name, createdById: req.userId },
                 attributes: ['id']
               });
-              
+
               if (catResult) {
                 catId = catResult.id;
                 categoryCache.set(category_name, catId);
@@ -184,7 +184,7 @@ const bulkUpload = asyncHandler(async (req, res) => {
     };
     const processBatch = async (batch) => {
       if (batch.length === 0) return;
-      
+
       await db.Product.bulkCreate(batch, {
         validate: true,
         ignoreDuplicates: false
@@ -197,15 +197,15 @@ const bulkUpload = asyncHandler(async (req, res) => {
       const workbook = xlsx.read(req.file.buffer);
       const worksheet = workbook.Sheets[workbook.SheetNames[0]];
       const data = xlsx.utils.sheet_to_json(worksheet);
-      
+
       async function* xlsxGenerator(arr) {
         for (const item of arr) {
           yield item;
         }
       }
-      
+
       result = await processStream(xlsxGenerator(data));
-    } 
+    }
     else if (req.file.mimetype.includes('csv') || req.file.originalname.endsWith('.csv')) {
       const { parse } = require('csv-parse');
       const { Readable } = require('stream');
@@ -215,16 +215,16 @@ const bulkUpload = asyncHandler(async (req, res) => {
       } else {
         readStream = require('fs').createReadStream(req.file.path);
       }
-      
+
       const parser = readStream.pipe(parse({
         columns: true,
         skip_empty_lines: true,
         trim: true
       }));
       console.log(parser);
-      
+
       result = await processStream(parser);
-    } 
+    }
     else {
       return res.status(400).send({ error: 'Only CSV and XLSX files allowed' });
     }
@@ -247,66 +247,68 @@ const bulkUpload = asyncHandler(async (req, res) => {
   }
 });
 const exportProducts = asyncHandler(async (req, res) => {
-    const { format = 'csv', search = '' } = req.query;
+  const { format = 'csv', search = '' } = req.query;
 
-    const searchQuery = search ? '%' + search.toLowerCase() + '%' : '%%';
+  const searchQuery = search ? '%' + search.toLowerCase() + '%' : '%%';
 
-    const result = await db.Product.findAll({
-        where: {
-            [Op.or]: [
-                { name: { [Op.like]: searchQuery } },
-                { '$category.name$': { [Op.like]: searchQuery } }
-            ]
-        },
-        include: [{
-            model: db.Category,
-            as: 'category',
-            required: true
-        }],
-        order: [['createdAt', 'DESC']]
+  let result = await db.Product.findAll({
+    where: {
+      [Op.or]: [
+        { name: { [Op.like]: searchQuery } },
+        { '$category.name$': { [Op.like]: searchQuery } }
+      ]
+    },
+    include: [{
+      model: db.Category,
+      as: 'category',
+      required: true
+    }],
+    order: [['createdAt', 'DESC']]
+  });
+  if (result.length === 0) {
+    return res.status(404).send({ error: 'No products found' });
+  }else{
+    result =  result.map(product => ({
+      id: product.id,
+      uniqueId: product.uniqueId,
+      category_name: product.category?.name || '',
+      name: product.name,
+      price: product.price
+    }));
+  }
+
+  if (format === 'xlsx') {
+    const workbook = xlsx.utils.book_new();
+    const worksheet = xlsx.utils.json_to_sheet(result);
+    xlsx.utils.book_append_sheet(workbook, worksheet, 'Products');
+
+    const filename = `products_${Date.now()}.xlsx`;
+    const filepath = path.join(__dirname, '../../uploads/exports', filename);
+
+    xlsx.writeFile(workbook, filepath);
+
+    res.send({
+      message: 'Export created successfully',
+      downloadUrl: `/uploads/exports/${filename}`
     });
-    if (result.length === 0) {
-        return res.status(404).send({ error: 'No products found' });
-    }
+  } else {
+    const csv = require('csv-stringify/sync');
+    const csvData = csv.stringify(result, {
+      header: true,
+      columns: ['id', 'uniqueId', 'category_name', 'name', 'price'],
+    });
+    const uploadDir = path.join(__dirname, '../../uploads/exports');
 
-    if (format === 'xlsx') {
-        const workbook = xlsx.utils.book_new();
-        const worksheet = xlsx.utils.json_to_sheet(result);
-        xlsx.utils.book_append_sheet(workbook, worksheet, 'Products');
+    await fs.mkdir(uploadDir, { recursive: true });
 
-        const filename = `products_${Date.now()}.xlsx`;
-        const filepath = path.join(__dirname, '../../uploads', filename);
-
-        xlsx.writeFile(workbook, filepath);
-
-        res.download(filepath, filename, async () => {
-            await fs.unlink(filepath);
-        });
-    } else {
-        const csvRows = result.map(product => ({
-            id: product.id,
-            uniqueId: product.uniqueId,
-            category_name: product.category?.name || '',
-            name: product.name,
-            price: product.price
-        }));
-        const csv = require('csv-stringify/sync');
-        const csvData = csv.stringify(csvRows, {
-            header: true,
-            columns: ['id', 'uniqueId', 'category_name', 'name', 'price'],
-        });
-        const uploadDir = path.join(__dirname, '../../uploads/exports');
-
-        await fs.mkdir(uploadDir, { recursive: true });
-
-        const fileName = `products_${Date.now()}.csv`;
-        const filePath = path.join(uploadDir, fileName);
-        await fs.writeFile(filePath, csvData);
-        res.send({
-            message: 'Export created successfully',
-            downloadUrl: `/uploads/exports/${fileName}`
-        });
-    }
+    const fileName = `products_${Date.now()}.csv`;
+    const filePath = path.join(uploadDir, fileName);
+    await fs.writeFile(filePath, csvData);
+    res.send({
+      message: 'Export created successfully',
+      downloadUrl: `/uploads/exports/${fileName}`
+    });
+  }
 });
 
 module.exports = { bulkUpload, exportProducts };
