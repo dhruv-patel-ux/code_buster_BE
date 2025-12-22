@@ -6,7 +6,7 @@ const verifyToken = (req, res, next) => {
     const token = req.headers.authorization?.split(' ');
     
     if (!token) {
-      return res.status(401).json({ error: 'No token provided' });
+      return res.status(401).send({ error: 'No token provided' });
     }
 
     const decoded = jwt.verify(token[1], process.env.JWT_SECRET);
@@ -15,7 +15,7 @@ const verifyToken = (req, res, next) => {
     req.userEmail = decoded.email;
     next();
   } catch (error) {
-    return res.status(401).json({ error: 'Invalid or expired token' });
+    return res.status(401).send({ error: 'Invalid or expired token' });
   }
 };
 

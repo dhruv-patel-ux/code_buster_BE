@@ -50,7 +50,7 @@ const getProductById = asyncHandler(async (req, res) => {
     });
 
     if (!result) {
-        return res.status(404).json({ error: 'Product not found' });
+        return res.status(404).send({ error: 'Product not found' });
     }
 
     res.send(result);
@@ -60,17 +60,17 @@ const createProduct = asyncHandler(async (req, res) => {
     const { name, price, category_id } = req.body;
 
     if (!name || !price || !category_id) {
-        return res.status(400).json({ error: 'Name, price, and category_id required' });
+        return res.status(400).send({ error: 'Name, price, and category_id required' });
     }
 
     if (isNaN(price) || price <= 0) {
-        return res.status(400).json({ error: 'Price must be positive number' });
+        return res.status(400).send({ error: 'Price must be positive number' });
     }
 
     const categoryCheck = await db.Category.findByPk(category_id);
 
     if (!categoryCheck) {
-        return res.status(404).json({ error: 'Category not found' });
+        return res.status(404).send({ error: 'Category not found' });
     }
 
     let productImage = null;
@@ -85,7 +85,7 @@ const createProduct = asyncHandler(async (req, res) => {
         createdById: req.userId
     }
     );
-    res.status(201).json({
+    res.status(201).send({
         message: 'Product created successfully',
         product: result,
     });
@@ -96,7 +96,7 @@ const updateProduct = asyncHandler(async (req, res) => {
     const { name, price, category_id } = req.body;
 
     if (price && (isNaN(price) || price <= 0)) {
-        return res.status(400).json({ error: 'Price must be positive number' });
+        return res.status(400).send({ error: 'Price must be positive number' });
     }
 
     let productImage = null;
@@ -117,14 +117,14 @@ const updateProduct = asyncHandler(async (req, res) => {
     });
 
     if (result.length === 0) {
-        return res.status(404).json({ error: 'Product not found' });
+        return res.status(404).send({ error: 'Product not found' });
     }
     const updatedProduct = await db.Product.findByPk(id, {
         include: [{
             model: db.Category, as: 'category',
         }]
     });
-    res.json({
+    res.send({
         message: 'Product updated successfully',
         product: updatedProduct,
     });
@@ -138,10 +138,10 @@ const deleteProduct = asyncHandler(async (req, res) => {
     });
 
     if (!result) {
-        return res.status(404).json({ error: 'Product not found' });
+        return res.status(404).send({ error: 'Product not found' });
     }
 
-    res.json({ message: 'Product deleted successfully' });
+    res.send({ message: 'Product deleted successfully' });
 });
 
 module.exports = {

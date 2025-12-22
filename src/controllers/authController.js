@@ -7,12 +7,12 @@ const register = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-        return res.status(400).json({ error: 'Email and password required' });
+        return res.status(400).send({ error: 'Email and password required' });
     }
 
     const result = await db.User.findOne({ where: { email } });
     if (result) {
-        return res.status(400).json({ error: 'User already exists' });
+        return res.status(400).send({ error: 'User already exists' });
     }
 
     const hashedPassword = await hashPassword(password);
@@ -26,7 +26,7 @@ const register = asyncHandler(async (req, res) => {
         process.env.JWT_SECRET,
         { expiresIn: process.env.JWT_EXPIRE }
     );
-    res.status(201).json({
+    res.status(201).send({
         message: 'User created successfully',
         user: newUser,
         token,
@@ -37,19 +37,19 @@ const login = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
 
     if (!email || !password) {
-        return res.status(400).json({ error: 'Email and password required' });
+        return res.status(400).send({ error: 'Email and password required' });
     }
 
     const result = await db.User.findOne({ where: { email } });
     if (!result) {
-        return res.status(401).json({ error: 'Invalid credentials' });
+        return res.status(401).send({ error: 'Invalid credentials' });
     }
 
     const user = result;
 
     const isPasswordValid = await comparePassword(password, user.passwordHash);
     if (!isPasswordValid) {
-        return res.status(401).json({ error: 'Invalid credentials' });
+        return res.status(401).send({ error: 'Invalid credentials' });
     }
 
     const token = jwt.sign(
@@ -58,7 +58,7 @@ const login = asyncHandler(async (req, res) => {
         { expiresIn: process.env.JWT_EXPIRE }
     );
 
-    res.json({
+    res.send({
         message: 'Login successful',
         token,
         user: { id: user.id, email: user.email },
@@ -71,18 +71,18 @@ const changePassword = asyncHandler(async (req, res) => {
 
     const result = await db.User.findOne({ where: { id: userId } });
     if (!result) {
-        return res.status(404).json({ error: 'User not found' });
+        return res.status(404).send({ error: 'User not found' });
     }
 
     const isValid = await comparePassword(oldPassword, result.passwordHash);
     if (!isValid) {
-        return res.status(401).json({ error: 'Current password is incorrect' });
+        return res.status(401).send({ error: 'Current password is incorrect' });
     }
 
     const hashedPassword = await hashPassword(newPassword);
     await db.User.update({ passwordHash: hashedPassword }, { where: { id: userId } });
 
-    res.json({ message: 'Password updated successfully' });
+    res.send({ message: 'Password updated successfully' });
 });
 
 module.exports = { register, login, changePassword };

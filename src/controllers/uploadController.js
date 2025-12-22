@@ -7,7 +7,7 @@ const db = require('../config/database');
 
 // const bulkUpload = asyncHandler(async (req, res) => {
 //     if (!req.file) {
-//         return res.status(400).json({ error: 'No file uploaded' });
+//         return res.status(400).send({ error: 'No file uploaded' });
 //     }
 
 //     const { category_id } = req.body;
@@ -27,11 +27,11 @@ const db = require('../config/database');
             
 //             // data = csv.parse(req.file.buffer.toString(), { columns: true });
 //         } else {
-//             return res.status(400).json({ error: 'Only CSV and XLSX files allowed' });
+//             return res.status(400).send({ error: 'Only CSV and XLSX files allowed' });
 //         }
 
 //         if (data.length === 0) {
-//             return res.status(400).json({ error: 'File is empty' });
+//             return res.status(400).send({ error: 'File is empty' });
 //         }
 
 //         const batchSize = 100;
@@ -86,7 +86,7 @@ const db = require('../config/database');
 //             }
 //         }
 
-//         res.json({
+//         res.send({
 //             message: 'Bulk upload completed',
 //             successCount,
 //             errorCount,
@@ -94,14 +94,14 @@ const db = require('../config/database');
 //             errors: errors.slice(0, 10)
 //         });
 //     } catch (error) {
-//         res.status(400).json({ error: 'File parsing failed: ' + error.message });
+//         res.status(400).send({ error: 'File parsing failed: ' + error.message });
 //     }
 // });
 
 
 const bulkUpload = asyncHandler(async (req, res) => {
   if (!req.file) {
-    return res.status(400).json({ error: 'No file uploaded' });
+    return res.status(400).send({ error: 'No file uploaded' });
   }
 
   const { category_id } = req.body;
@@ -226,14 +226,14 @@ const bulkUpload = asyncHandler(async (req, res) => {
       result = await processStream(parser);
     } 
     else {
-      return res.status(400).json({ error: 'Only CSV and XLSX files allowed' });
+      return res.status(400).send({ error: 'Only CSV and XLSX files allowed' });
     }
 
     if (result.totalRows === 0) {
-      return res.status(400).json({ error: 'File is empty' });
+      return res.status(400).send({ error: 'File is empty' });
     }
 
-    res.json({
+    res.send({
       message: 'Bulk upload completed',
       successCount: result.successCount,
       errorCount: result.errorCount,
@@ -243,7 +243,7 @@ const bulkUpload = asyncHandler(async (req, res) => {
 
   } catch (error) {
     console.error('Bulk upload error:', error);
-    res.status(400).json({ error: 'File parsing failed: ' + error.message });
+    res.status(400).send({ error: 'File parsing failed: ' + error.message });
   }
 });
 const exportProducts = asyncHandler(async (req, res) => {
@@ -266,7 +266,7 @@ const exportProducts = asyncHandler(async (req, res) => {
         order: [['createdAt', 'DESC']]
     });
     if (result.length === 0) {
-        return res.status(404).json({ error: 'No products found' });
+        return res.status(404).send({ error: 'No products found' });
     }
 
     if (format === 'xlsx') {
@@ -302,7 +302,7 @@ const exportProducts = asyncHandler(async (req, res) => {
         const fileName = `products_${Date.now()}.csv`;
         const filePath = path.join(uploadDir, fileName);
         await fs.writeFile(filePath, csvData);
-        res.json({
+        res.send({
             message: 'Export created successfully',
             downloadUrl: `/uploads/exports/${fileName}`
         });
