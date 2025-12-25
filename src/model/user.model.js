@@ -18,7 +18,16 @@ module.exports = (sequelize) => {
     passwordHash: {
       type: DataTypes.STRING,
       allowNull: false
-    }
+    },
+    roleId: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: 'role',
+        key: 'id'
+      },
+      onDelete: 'CASCADE'
+    },
   }, {
     tableName: 'users',
     timestamps: true,

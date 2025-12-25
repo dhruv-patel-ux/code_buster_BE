@@ -16,10 +16,11 @@ const register = asyncHandler(async (req, res) => {
     }
 
     const hashedPassword = await hashPassword(password);
-
+    const role = await db.Role.findOne({ where: { type : 'USER' } });
     const newUser = await db.User.create({
         email,
-        passwordHash: hashedPassword
+        passwordHash: hashedPassword,
+        roleId : role.id
     });
     const token = getToken(newUser)
     res.status(201).send({

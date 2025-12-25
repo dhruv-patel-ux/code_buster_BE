@@ -24,9 +24,11 @@ async function initialize() {
   db.User = require('../model/user.model')(sequelize);
   db.Category = require('../model/category.model')(sequelize);
   db.Product = require('../model/product.model')(sequelize);
+  db.Role = require('../model/role.model')(sequelize);
 
   db.User.hasMany(db.Category, { foreignKey: 'createdById' });
   db.User.hasMany(db.Product, { foreignKey: 'createdById' });
+  db.User.belongsTo(db.Role, { foreignKey: 'roleId', as: 'role' });
   db.Category.hasMany(db.Product, { foreignKey: 'categoryId' });
   db.Product.belongsTo(db.Category, { foreignKey: 'categoryId', as: 'category' });
 

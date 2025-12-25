@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const {verifyToken} = require('../middleware/authMiddleware');
+const {verifyToken, adminRole} = require('../middleware/authMiddleware');
 const productController = require('../controllers/productController');
 const { uploadProductImage } = require('../middleware/multer.middleware');
 
@@ -8,6 +8,6 @@ router.post('/create', verifyToken, uploadProductImage.single('image'), productC
 router.get('/get/:id', verifyToken, productController.getProductById);
 router.get('/get', verifyToken, productController.getProducts);
 router.put('/update/:id', verifyToken, uploadProductImage.single('image'),productController.updateProduct);
-router.delete('/delete/:id', verifyToken, productController.deleteProduct);
+router.delete('/delete/:id', verifyToken, adminRole, productController.deleteProduct);
 
 module.exports = router;
