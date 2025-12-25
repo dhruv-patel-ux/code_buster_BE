@@ -103,8 +103,6 @@ const bulkUpload = asyncHandler(async (req, res) => {
   if (!req.file) {
     return res.status(400).send({ error: 'No file uploaded' });
   }
-
-  const { category_id } = req.body;
   const BATCH_SIZE = 500;
 
   try {
@@ -129,7 +127,7 @@ const bulkUpload = asyncHandler(async (req, res) => {
             continue;
           }
 
-          let catId = category_id;
+          let catId;
 
           if (category_name && !catId) {
             // Check cache first
@@ -159,7 +157,7 @@ const bulkUpload = asyncHandler(async (req, res) => {
           batch.push({
             name,
             price: parseFloat(price),
-            categoryId: catId,
+            categoryId: Number(catId),
             productImage: product_image || null,
             createdById: req.userId
           });

@@ -21,11 +21,7 @@ const register = asyncHandler(async (req, res) => {
         email,
         passwordHash: hashedPassword
     });
-    const token = jwt.sign(
-        { id: newUser.id, email: newUser.email },
-        process.env.JWT_SECRET,
-        { expiresIn: process.env.JWT_EXPIRE }
-    );
+    const token = getToken(newUser)
     res.status(201).send({
         message: 'User created successfully',
         user: newUser,
@@ -52,11 +48,7 @@ const login = asyncHandler(async (req, res) => {
         return res.status(401).send({ error: 'Invalid credentials' });
     }
 
-    const token = jwt.sign(
-        { id: user.id, email: user.email },
-        process.env.JWT_SECRET,
-        { expiresIn: process.env.JWT_EXPIRE }
-    );
+    const token = getToken(user);
 
     res.send({
         message: 'Login successful',
@@ -85,4 +77,13 @@ const changePassword = asyncHandler(async (req, res) => {
     res.send({ message: 'Password updated successfully' });
 });
 
+function getToken(user){
+    if(!user) return;
+    return jwt.sign(
+        { id: user.id, email: user.email },
+        process.env.JWT_SECRET,
+        { expiresIn: process.env.JWT_EXPIRE }
+    );
+
+}
 module.exports = { register, login, changePassword };

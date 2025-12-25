@@ -3,20 +3,29 @@ const { asyncHandler } = require('../middleware/errorHandler');
 const path = require('path');
 const { Op } = require('sequelize');
 
+const getPagination = (page, size) => {
+  const limit = size ? +size : 10;
+  const offset = page ? (page - 1) * limit : 0; 
+
+  return { limit, offset };
+};
+
 const getProducts = asyncHandler(async (req, res) => {
     const {
-        sort = 'createdAt',
+        sort = 'price',
         order = 'DESC',
         search = '',
+        page = 0
     } = req.query;
-
-    const allowedSorts = ['name', 'price', 'createdAt'];
-    const sortColumn = allowedSorts.includes(sort) ? sort : 'createdAt';
+    const {limit , offset} = getPagination(page,  req.query?.limit)
+    const allowedSorts = ['price', 'name'];
+    const sortColumn = allowedSorts.includes(sort) ? sort : 'price';
     const orderBy = ['ASC', 'DESC'].includes(order.toUpperCase()) ? order.toUpperCase() : 'DESC';
 
     const searchQuery = search ? `%${search?.trim()}%` : '%%';
 
     const result = await db.Product.findAll({
+        attributes : ['name', 'id', 'price', 'productImage'],
         where: {
             [Op.or]: [
                 { name: { [Op.like]: searchQuery } },
@@ -27,12 +36,13 @@ const getProducts = asyncHandler(async (req, res) => {
             {
                 model: db.Category,
                 as: 'category',
-                required: false
+                attributes : ['name', 'id']
             }
         ],
         distinct: true,
         order: [[sortColumn, orderBy]],
-
+        limit,
+        offset
     });
 
     res.send({
@@ -75,7 +85,7 @@ const createProduct = asyncHandler(async (req, res) => {
 
     let productImage = null;
     if (req.file) {
-        productImage = path.join('products', path.basename(req.file.path));
+        productImage = path.join('uploads','products', path.basename(req.file.path));
     }
     const result = await db.Product.create({
         name,
@@ -101,7 +111,7 @@ const updateProduct = asyncHandler(async (req, res) => {
 
     let productImage = null;
     if (req.file) {
-        productImage = path.join('products', path.basename(req.file.path));
+        productImage = path.join('uploads','products', path.basename(req.file.path));
     }
     const productUpdate = {};
     if (name) productUpdate.name = name;
